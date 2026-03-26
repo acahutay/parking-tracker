@@ -1,7 +1,7 @@
-<?php
+<?php 
 
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Route; 
 
-Route::get('/', function () {
-    return view('parking-dashboard');
-});
+Route::get('/', function () { 
+	return view('parking-dashboard'); 
+}); 
