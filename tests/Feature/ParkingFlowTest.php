@@ -1,92 +1,93 @@
-<?php
+<?php 
 
-namespace Tests\Feature;
+namespace Tests\Feature; 
 
-use App\Models\ParkingSection;
-use App\Models\ParkingTicket;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Models\ParkingSection; 
+use App\Models\ParkingTicket; 
+use Illuminate\Foundation\Testing\RefreshDatabase; 
+use Tests\TestCase; 
 
-class ParkingFlowTest extends TestCase
-{
-    use RefreshDatabase;
+class ParkingFlowTest extends TestCase 
+{ 
 
-    public function test_guard_can_seed_sections(): void
-    {
-        $response = $this->postJson('/api/sections/seed');
+	use RefreshDatabase; 
 
-        $response->assertStatus(200);
-        $response->assertJsonFragment(['message' => 'Sections seeded']);
-        $this->assertGreaterThan(0, ParkingSection::count());
-    }
+    public function test_guard_can_seed_sections(): void 
+	{ 
+        $response = $this->postJson('/api/sections/seed'); 
 
-    public function test_guard_can_check_in_and_section_count_goes_down(): void
-    {
-        $this->postJson('/api/sections/seed');
+	    $response->assertStatus(200); 
+        $response->assertJsonFragment(['message' => 'Sections seeded']); 
+        $this->assertGreaterThan(0, ParkingSection::count()); 
+	} 
 
-        $before = ParkingSection::where('floor', '1')->where('section_code', 'A')->first();
+    public function test_guard_can_check_in_and_section_count_goes_down(): void 
+	{ 
+        $this->postJson('/api/sections/seed'); 
 
-        $response = $this->postJson('/api/check-in', [
-            'plate_number' => 'ABC-1001',
-            'floor' => '1',
-            'section_code' => 'A',
-        ]);
+	    $before = ParkingSection::where('floor', '1')->where('section_code', 'A')->first(); 
 
-        $response->assertStatus(200);
-        $response->assertJsonFragment(['message' => 'Driver accepted. Give this parking card info.']);
+        $response = $this->postJson('/api/check-in', [ 
+	        'plate_number' => 'ABC-1001', 
+            'floor' => '1', 
+            'section_code' => 'A', 
+	    ]); 
 
-        $after = ParkingSection::where('floor', '1')->where('section_code', 'A')->first();
-        $this->assertEquals($before->available_spaces - 1, $after->available_spaces);
-    }
+        $response->assertStatus(200); 
+	    $response->assertJsonFragment(['message' => 'Driver accepted. Give this parking card info.']); 
 
-    public function test_guard_gets_decline_when_section_is_full(): void
-    {
-        $this->postJson('/api/sections/seed');
+        $after = ParkingSection::where('floor', '1')->where('section_code', 'A')->first(); 
+	    $this->assertEquals($before->available_spaces - 1, $after->available_spaces); 
+    } 
 
-        for ($i = 1; $i <= 5; $i++) {
-            $this->postJson('/api/check-in', [
-                'plate_number' => 'FULL-'.$i,
-                'floor' => '1',
-                'section_code' => 'B',
-            ]);
-        }
+	public function test_guard_gets_decline_when_section_is_full(): void 
+    { 
+        $this->postJson('/api/sections/seed'); 
 
-        $response = $this->postJson('/api/check-in', [
-            'plate_number' => 'FULL-6',
-            'floor' => '1',
-            'section_code' => 'B',
-        ]);
+        for ($i = 1; $i <= 5; $i++) { 
+            $this->postJson('/api/check-in', [ 
+	            'plate_number' => 'FULL-'.$i, 
+                'floor' => '1',  
+                'section_code' => 'B', 
+	        ]); 
+        } 
 
-        $response->assertStatus(422);
-    }
+	    $response = $this->postJson('/api/check-in', [ 
+            'plate_number' => 'FULL-6', 
+            'floor' => '1',  
+	        'section_code' => 'B', 
+        ]); 
 
-    public function test_guard_can_check_out_and_space_is_returned(): void
-    {
-        $section = ParkingSection::create([
-            'floor' => '3',
-            'section_code' => 'C',
-            'capacity' => 5,
-            'available_spaces' => 4,
-        ]);
+	    $response->assertStatus(422); 
+    } 
 
-        $ticket = ParkingTicket::create([
-            'parking_section_id' => $section->id,
-            'plate_number' => 'ZXC-777',
-            'card_number' => 'CARD-3C-1111',
-            'checked_in_at' => now(),
-            'is_active' => true,
-        ]);
+	public function test_guard_can_check_out_and_space_is_returned(): void 
+    { 
+        $section  =  ParkingSection::create([ 
+	        'floor' => '3', 
+            'section_code' => 'C', 
+            'capacity' => 5, 
+	        'available_spaces' => 4, 
+        ]); 
 
-        $response = $this->postJson('/api/check-out', [
-            'ticket_id' => $ticket->id,
-        ]);
+	    $ticket = ParkingTicket::create([ 
+            'parking_section_id' => $section->id, 
+            'plate_number' => 'ZXC-777', 
+	        'card_number' => 'CARD-3C-1111', 
+            'checked_in_at' => now(), 
+            'is_active' => true,  
+	    ]); 
 
-        $response->assertStatus(200);
+        $response  =  $this->postJson('/api/check-out', [ 
+	        'ticket_id' => $ticket->id, 
+        ]); 
 
-        $section->refresh();
-        $ticket->refresh();
+	    $response->assertStatus(200); 
 
-        $this->assertEquals(5, $section->available_spaces);
-        $this->assertEquals(0, $ticket->is_active);
-    }
-}
+        $section->refresh(); 
+	    $ticket->refresh(); 
+
+        $this->assertEquals(5, $section->available_spaces); 
+	    $this->assertEquals(0, $ticket->is_active); 
+    } 
+} 
